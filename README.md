@@ -342,14 +342,16 @@ cmake --build build -j --config Release
 
 - All NPU-supported Whisper models and their compiled `.rai` cache files are available in this collection:  
   https://huggingface.co/collections/amd/ryzen-ai-16-whisper-npu-optimized-onnx-models
-- Download the `.rai` file matching your desired model, and place it in your `models/` directory alongside its corresponding `ggml-<...>.bin` file.
+- Download the pre-compiled `.rai` cache file matching your desired model, and place it in your `models/` directory alongside its corresponding `ggml-<...>.bin` file.
+  The cache file must be named with the `-encoder-vitisai.rai` suffix. For example, if your model file is named `ggml-small.bin`, the cache file should be named `ggml-small-encoder-vitisai.rai`.
+
 
 > **Note:** The ".rai" models from Hugging Face are pre-optimized for Ryzen™ AI NPUs, delivering acceleration benefits from the very first run (aside from any initial CPU-side caching overhead).
 
 Run the examples as usual:
 
 ```bash
-./build/bin/whisper-cli -m models/ggml-base.en.bin -f samples/jfk.wav
+./build/bin/whisper-cli -m models/ggml-small.bin -f samples/jfk.wav
 ```
 
 
