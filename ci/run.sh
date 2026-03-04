@@ -7,7 +7,7 @@
 # # CPU-only build
 # bash ./ci/run.sh ./tmp/results ./tmp/mnt
 #
-# # Linux Vulkan
+# # with Vulkan support
 # GG_BUILD_VULKAN=1 bash ./ci/run.sh ./tmp/results ./tmp/mnt
 #
 # # with CUDA support
