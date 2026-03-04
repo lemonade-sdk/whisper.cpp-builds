@@ -57,8 +57,7 @@ env:
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
   ubuntu_image: "ubuntu:22.04"
   VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
-  # TEMPORARY: set to 'false' to restore all jobs (only linux-x64-cpu, linux-x64-vulkan, windows-vulkan run when 'true')
-  LIMITED_CI: 'true'
+  # LIMITED_CI: use repository variable (Settings → Actions → Variables). Set LIMITED_CI = 'true' to run only linux-x64-cpu, linux-x64-vulkan, windows-vulkan. Remove or set to 'false' to restore full CI.
 
 jobs:
   determine-tag:
@@ -119,7 +118,7 @@ jobs:
 
   ubuntu-22:
     if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' ||
-            github.event.inputs.run_type == 'full-ci') && env.LIMITED_CI != 'true' }}
+            github.event.inputs.run_type == 'full-ci') && vars.LIMITED_CI != 'true' }}
     runs-on: ubuntu-22.04
 
     strategy:
@@ -151,7 +150,7 @@ jobs:
 
   ubuntu-22-arm64:
     if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' ||
-            github.event.inputs.run_type == 'full-ci') && env.LIMITED_CI != 'true' }}
+            github.event.inputs.run_type == 'full-ci') && vars.LIMITED_CI != 'true' }}
     runs-on: ubuntu-22.04
 
     strategy:
@@ -183,7 +182,7 @@ jobs:
 
   ubuntu-22-arm-v7:
     if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' ||
-            github.event.inputs.run_type == 'full-ci') && env.LIMITED_CI != 'true' }}
+            github.event.inputs.run_type == 'full-ci') && vars.LIMITED_CI != 'true' }}
     runs-on: ubuntu-22.04
 
     strategy:
@@ -215,7 +214,7 @@ jobs:
 
   macOS-latest:
     if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' ||
-            github.event.inputs.run_type == 'full-ci') && env.LIMITED_CI != 'true' }}
+            github.event.inputs.run_type == 'full-ci') && vars.LIMITED_CI != 'true' }}
     runs-on: macOS-latest
 
     strategy:
@@ -272,7 +271,7 @@ jobs:
 
   ubuntu-22-gcc:
     if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' ||
-            github.event.inputs.run_type == 'full-ci') && env.LIMITED_CI != 'true' }}
+            github.event.inputs.run_type == 'full-ci') && vars.LIMITED_CI != 'true' }}
     runs-on: ubuntu-22.04
 
     strategy:
@@ -306,7 +305,7 @@ jobs:
 
   ubuntu-22-gcc-arm64:
     if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' ||
-            github.event.inputs.run_type == 'full-ci') && env.LIMITED_CI != 'true' }}
+            github.event.inputs.run_type == 'full-ci') && vars.LIMITED_CI != 'true' }}
     runs-on: ubuntu-22.04
 
     strategy:
@@ -340,7 +339,7 @@ jobs:
 
   ubuntu-22-gcc-arm-v7:
     if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' ||
-            github.event.inputs.run_type == 'full-ci') && env.LIMITED_CI != 'true' }}
+            github.event.inputs.run_type == 'full-ci') && vars.LIMITED_CI != 'true' }}
     runs-on: ubuntu-22.04
 
     strategy:
@@ -374,7 +373,7 @@ jobs:
 
   ubuntu-22-clang:
     if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' ||
-            github.event.inputs.run_type == 'full-ci') && env.LIMITED_CI != 'true' }}
+            github.event.inputs.run_type == 'full-ci') && vars.LIMITED_CI != 'true' }}
     runs-on: ubuntu-22.04
 
     strategy:
@@ -411,7 +410,7 @@ jobs:
 
   ubuntu-22-gcc-sanitized:
     if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' ||
-            github.event.inputs.run_type == 'full-ci') && env.LIMITED_CI != 'true' }}
+            github.event.inputs.run_type == 'full-ci') && vars.LIMITED_CI != 'true' }}
     runs-on: ubuntu-22.04
 
     strategy:
@@ -548,7 +547,7 @@ jobs:
 
   ubuntu-22-cmake-sycl:
     if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' ||
-            github.event.inputs.run_type == 'full-ci') && env.LIMITED_CI != 'true' }}
+            github.event.inputs.run_type == 'full-ci') && vars.LIMITED_CI != 'true' }}
     runs-on: ubuntu-22.04
 
     strategy:
@@ -600,7 +599,7 @@ jobs:
 
   ubuntu-22-cmake-sycl-fp16:
     if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' ||
-            github.event.inputs.run_type == 'full-ci') && env.LIMITED_CI != 'true' }}
+            github.event.inputs.run_type == 'full-ci') && vars.LIMITED_CI != 'true' }}
     runs-on: ubuntu-22.04
 
     strategy:
@@ -652,7 +651,7 @@ jobs:
 
   windows-msys2:
     if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' ||
-            github.event.inputs.run_type == 'full-ci') && env.LIMITED_CI != 'true' }}
+            github.event.inputs.run_type == 'full-ci') && vars.LIMITED_CI != 'true' }}
     runs-on: windows-latest
 
     strategy:
@@ -698,7 +697,7 @@ jobs:
 
   windows:
     if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' ||
-            github.event.inputs.run_type == 'full-ci') && env.LIMITED_CI != 'true' }}
+            github.event.inputs.run_type == 'full-ci') && vars.LIMITED_CI != 'true' }}
     runs-on: windows-latest
     needs: determine-tag
 
@@ -792,7 +791,7 @@ jobs:
 
   windows-blas:
     if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' ||
-            github.event.inputs.run_type == 'full-ci') && env.LIMITED_CI != 'true' }}
+            github.event.inputs.run_type == 'full-ci') && vars.LIMITED_CI != 'true' }}
     runs-on: windows-latest
 
     strategy:
@@ -878,7 +877,7 @@ jobs:
 
   windows-cublas:
     if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' ||
-            github.event.inputs.run_type == 'full-ci') && env.LIMITED_CI != 'true' }}
+            github.event.inputs.run_type == 'full-ci') && vars.LIMITED_CI != 'true' }}
     runs-on: windows-2022
     needs: determine-tag
     strategy:
@@ -1152,7 +1151,7 @@ jobs:
 
   emscripten:
     if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' ||
-            github.event.inputs.run_type == 'full-ci') && env.LIMITED_CI != 'true' }}
+            github.event.inputs.run_type == 'full-ci') && vars.LIMITED_CI != 'true' }}
     runs-on: ubuntu-22.04
 
     strategy:
@@ -1175,7 +1174,7 @@ jobs:
           make
 
   ios-xcode-build:
-    if: ${{ env.LIMITED_CI != 'true' }}
+    if: ${{ vars.LIMITED_CI != 'true' }}
     runs-on: macos-latest
     needs: determine-tag
 
@@ -1234,7 +1233,7 @@ jobs:
 
   android:
     if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' ||
-            github.event.inputs.run_type == 'full-ci') && env.LIMITED_CI != 'true' }}
+            github.event.inputs.run_type == 'full-ci') && vars.LIMITED_CI != 'true' }}
     runs-on: ubuntu-22.04
 
     steps:
@@ -1404,7 +1403,7 @@ jobs:
           ./build/bin/whisper-quantize models/ggml-tiny.en.bin models/ggml-tiny.en-q4_0.bin q4_0
 
   release:
-    if: ${{ (github.event.inputs.create_release == 'true' || github.event.inputs.pre_release_tag != '' || startsWith(github.ref, 'refs/tags/v')) && env.LIMITED_CI != 'true' }}
+    if: ${{ (github.event.inputs.create_release == 'true' || github.event.inputs.pre_release_tag != '' || startsWith(github.ref, 'refs/tags/v')) && vars.LIMITED_CI != 'true' }}
 
     runs-on: ubuntu-latest
 
@@ -1478,7 +1477,7 @@ jobs:
     if: ${{ ((github.event_name == 'push' && github.ref == 'refs/heads/master') ||
             github.event.inputs.create_release == 'true' ||
             github.event.inputs.pre_release_tag != '' ||
-            startsWith(github.ref, 'refs/tags/v')) && env.LIMITED_CI != 'true' }}
+            startsWith(github.ref, 'refs/tags/v')) && vars.LIMITED_CI != 'true' }}
     runs-on: macos-latest
     needs: determine-tag
 
