@@ -544,6 +544,64 @@ jobs:
           name: whisper-bin-linux-x64-vulkan.zip
           path: whisper-bin-linux-x64-vulkan.zip
 
+  darwin-arm64-metal:
+    if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' ||
+            github.event.inputs.run_type == 'full-ci' }}
+    needs: determine-tag
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            label: macos-14
+            archive: whisper-bin-darwin-arm64-metal.zip
+          - os: macos-latest
+            label: macos-latest
+            archive: whisper-bin-darwin-arm64-metal-latest.zip
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Clone
+        uses: actions/checkout@v6
+
+      - name: ccache
+        uses: ggml-org/ccache-action@v1.2.21
+        with:
+          key: darwin-arm64-metal-${{ matrix.label }}
+          evict-old-files: 1d
+
+      - name: Configure CMake
+        run: |
+          sysctl -a
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DGGML_METAL=ON \
+            -DGGML_METAL_USE_BF16=ON \
+            -DGGML_METAL_EMBED_LIBRARY=ON \
+            -DWHISPER_BUILD_EXAMPLES=ON \
+            -DWHISPER_BUILD_TESTS=OFF \
+            -DWHISPER_BUILD_SERVER=ON
+
+      - name: Build
+        run: cmake --build build --config Release -j $(sysctl -n hw.logicalcpu)
+
+      - name: Package binaries
+        run: |
+          PACKAGE_NAME="whisper-bin-darwin-arm64-metal"
+          mkdir -p "$PACKAGE_NAME"
+          cp -r build/bin/* "$PACKAGE_NAME/" 2>/dev/null || true
+          find build -name "*.dylib" -exec cp {} "$PACKAGE_NAME/" \; 2>/dev/null || true
+          zip -r "${{ matrix.archive }}" "$PACKAGE_NAME"
+
+      - name: Upload binaries
+        if: ${{ needs.determine-tag.outputs.should_release }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ matrix.archive }}
+          path: ${{ matrix.archive }}
+
   ubuntu-22-cmake-sycl:
     if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' ||
             github.event.inputs.run_type == 'full-ci') }}
@@ -1414,6 +1472,7 @@ jobs:
       - linux-x64-cpu
       - linux-x64-vulkan
       - windows-vulkan
+      - darwin-arm64-metal
 
     steps:
       - name: Clone
