@@ -555,10 +555,10 @@ jobs:
         include:
           - os: macos-14
             label: macos-14
-            archive: whisper-bin-darwin-arm64-metal.zip
+            archive_suffix: ""
           - os: macos-latest
             label: macos-latest
-            archive: whisper-bin-darwin-arm64-metal-latest.zip
+            archive_suffix: "-latest"
 
     runs-on: ${{ matrix.os }}
 
@@ -591,18 +591,20 @@ jobs:
 
       - name: Package binaries
         run: |
-          PACKAGE_NAME="whisper-bin-darwin-arm64-metal"
-          mkdir -p "$PACKAGE_NAME"
-          cp -r build/bin/* "$PACKAGE_NAME/" 2>/dev/null || true
-          find build -name "*.dylib" -exec cp {} "$PACKAGE_NAME/" \; 2>/dev/null || true
-          zip -r "${{ matrix.archive }}" "$PACKAGE_NAME"
+          ARCHIVE="whisper-${{ needs.determine-tag.outputs.tag_name }}-darwin-metal-arm64${{ matrix.archive_suffix }}.tar.gz"
+          STAGE="whisper-${{ needs.determine-tag.outputs.tag_name }}-darwin-metal-arm64${{ matrix.archive_suffix }}"
+          mkdir -p "$STAGE"
+          cp -r build/bin/* "$STAGE/" 2>/dev/null || true
+          find build -name "*.dylib" -exec cp {} "$STAGE/" \; 2>/dev/null || true
+          tar -czf "$ARCHIVE" "$STAGE"
+          echo "ARCHIVE=$ARCHIVE" >> "$GITHUB_ENV"
 
       - name: Upload binaries
         if: ${{ needs.determine-tag.outputs.should_release }}
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ matrix.archive }}
-          path: ${{ matrix.archive }}
+          name: ${{ env.ARCHIVE }}
+          path: ${{ env.ARCHIVE }}
 
   ubuntu-22-cmake-sycl:
     if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' ||
@@ -1498,7 +1500,9 @@ jobs:
 
       - name: Move artifacts
         id: move_artifacts
-        run: mkdir -p ./artifact/release && mv ./artifact/*/*.zip ./artifact/release
+        run: |
+          mkdir -p ./artifact/release
+          find ./artifact -mindepth 2 \( -name '*.zip' -o -name '*.tar.gz' \) -exec mv {} ./artifact/release/ \;
 
       - name: Create release
         id: create_release
@@ -1520,7 +1524,7 @@ jobs:
             const fs = require('fs');
             const release_id = '${{ steps.create_release.outputs.id }}';
             for (let file of await fs.readdirSync('./artifact/release')) {
-              if (path.extname(file) === '.zip') {
+              if (path.extname(file) === '.zip' || file.endsWith('.tar.gz')) {
                 console.log('uploadReleaseAsset', file);
                 await github.repos.uploadReleaseAsset({
                   owner: context.repo.owner,
