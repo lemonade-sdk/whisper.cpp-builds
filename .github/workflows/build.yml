@@ -1800,7 +1800,21 @@ jobs:
       - name: Test
         id: ggml-ci
         run: |
-          export VK_ICD_FILENAMES="$(brew --prefix molten-vk)/share/vulkan/icd.d/MoltenVK_icd.json"
-          export CMAKE_PREFIX_PATH="$(brew --prefix vulkan-loader):$(brew --prefix vulkan-headers):$(brew --prefix molten-vk):$CMAKE_PREFIX_PATH"
+          set -euo pipefail
+          MOLTEN_VK_PREFIX="$(brew --prefix molten-vk)"
+          ICD="$(find "$MOLTEN_VK_PREFIX" -name 'MoltenVK_icd.json' 2>/dev/null | head -1 || true)"
+          if [ -z "$ICD" ]; then
+            DYLIB="$MOLTEN_VK_PREFIX/lib/libMoltenVK.dylib"
+            if [ ! -f "$DYLIB" ]; then
+              echo "libMoltenVK.dylib not found under $MOLTEN_VK_PREFIX" >&2
+              ls -R "$MOLTEN_VK_PREFIX" >&2 || true
+              exit 1
+            fi
+            ICD="$RUNNER_TEMP/MoltenVK_icd.json"
+            printf '{"file_format_version":"1.0.0","ICD":{"library_path":"%s","api_version":"1.2.0"}}\n' "$DYLIB" > "$ICD"
+          fi
+          export VK_ICD_FILENAMES="$ICD"
+          export CMAKE_PREFIX_PATH="$(brew --prefix vulkan-loader):$(brew --prefix vulkan-headers):$(brew --prefix molten-vk):${CMAKE_PREFIX_PATH:-}"
+          echo "VK_ICD_FILENAMES=$VK_ICD_FILENAMES"
           vulkaninfo --summary
           GG_BUILD_VULKAN=1 GG_BUILD_LOW_PERF=1 bash ./ci/run.sh ./tmp/results ./tmp/mnt
