@@ -1711,67 +1711,6 @@ jobs:
         run: |
           LLAMA_ARG_THREADS=$(nproc) GG_BUILD_NO_BF16=1 GG_BUILD_EXTRA_TESTS_0=1 bash ./ci/run.sh ./tmp/results ./tmp/mnt
 
-# Disabled on this fork: requires self-hosted NVIDIA Linux runner (labels: self-hosted, Linux, X64, NVIDIA).
-# Free GitHub-hosted runners have no GPU; nvidia-smi and runtime tests cannot pass. Re-enable if/when a runner is registered.
-#  ggml-ci-x64-nvidia-cuda:
-#    runs-on: [self-hosted, Linux, X64, NVIDIA]
-#
-#    steps:
-#      - name: Clone
-#        id: checkout
-#        uses: actions/checkout@v6
-#
-#      - name: Test
-#        id: ggml-ci
-#        run: |
-#          nvidia-smi
-#          GG_BUILD_CUDA=1 bash ./ci/run.sh ~/results/whisper.cpp /mnt/whisper.cpp
-#
-#  ggml-ci-x64-nvidia-vulkan-cm:
-#    runs-on: [self-hosted, Linux, X64, NVIDIA]
-#
-#    steps:
-#      - name: Clone
-#        id: checkout
-#        uses: actions/checkout@v6
-#
-#      - name: Test
-#        id: ggml-ci
-#        run: |
-#          vulkaninfo --summary
-#          GG_BUILD_VULKAN=1 GGML_VK_DISABLE_COOPMAT2=1 bash ./ci/run.sh ~/results/whisper.cpp /mnt/whisper.cpp
-
-# Disabled on this fork: requires Vulkan cooperative-matrix v2 (Ada/Hopper-class NVIDIA GPU on a self-hosted runner).
-# No GitHub-hosted runner has this hardware. Re-enable if/when a matching self-hosted runner is registered.
-#  ggml-ci-x64-nvidia-vulkan-cm2:
-#    runs-on: [self-hosted, Linux, X64, NVIDIA, COOPMAT2]
-#
-#    steps:
-#      - name: Clone
-#        id: checkout
-#        uses: actions/checkout@v6
-#
-#      - name: Test
-#        id: ggml-ci
-#        run: |
-#          vulkaninfo --summary
-#          GG_BUILD_VULKAN=1 bash ./ci/run.sh ~/results/whisper.cpp /mnt/whisper.cpp
-
-# Disabled on this fork: requires self-hosted Sapphire Rapids+ Xeon with AMX (labels: self-hosted, Linux, X64, CPU, AMX).
-# Free GitHub-hosted Linux runners use older CPUs without AMX. Re-enable if/when a matching self-hosted runner is registered.
-#  ggml-ci-x64-cpu-amx:
-#    runs-on: [self-hosted, Linux, X64, CPU, AMX]
-#
-#    steps:
-#      - name: Clone
-#        id: checkout
-#        uses: actions/checkout@v6
-#
-#      - name: Test
-#        id: ggml-ci
-#        run: |
-#          bash ./ci/run.sh ~/results/whisper.cpp /mnt/whisper.cpp
-
   ggml-ci-mac-metal:
     runs-on: macos-14
 
@@ -1784,37 +1723,3 @@ jobs:
         id: ggml-ci
         run: |
           GG_BUILD_METAL=1 GG_BUILD_LOW_PERF=1 bash ./ci/run.sh ./tmp/results ./tmp/mnt
-
-  ggml-ci-mac-vulkan:
-    runs-on: macos-14
-
-    steps:
-      - name: Clone
-        id: checkout
-        uses: actions/checkout@v6
-
-      - name: Install Vulkan SDK (MoltenVK)
-        run: |
-          brew install molten-vk vulkan-headers vulkan-loader vulkan-tools glslang shaderc
-
-      - name: Test
-        id: ggml-ci
-        run: |
-          set -euo pipefail
-          MOLTEN_VK_PREFIX="$(brew --prefix molten-vk)"
-          ICD="$(find "$MOLTEN_VK_PREFIX" -name 'MoltenVK_icd.json' 2>/dev/null | head -1 || true)"
-          if [ -z "$ICD" ]; then
-            DYLIB="$MOLTEN_VK_PREFIX/lib/libMoltenVK.dylib"
-            if [ ! -f "$DYLIB" ]; then
-              echo "libMoltenVK.dylib not found under $MOLTEN_VK_PREFIX" >&2
-              ls -R "$MOLTEN_VK_PREFIX" >&2 || true
-              exit 1
-            fi
-            ICD="$RUNNER_TEMP/MoltenVK_icd.json"
-            printf '{"file_format_version":"1.0.0","ICD":{"library_path":"%s","api_version":"1.2.0"}}\n' "$DYLIB" > "$ICD"
-          fi
-          export VK_ICD_FILENAMES="$ICD"
-          export CMAKE_PREFIX_PATH="$(brew --prefix vulkan-loader):$(brew --prefix vulkan-headers):$(brew --prefix molten-vk):${CMAKE_PREFIX_PATH:-}"
-          echo "VK_ICD_FILENAMES=$VK_ICD_FILENAMES"
-          vulkaninfo --summary
-          GG_BUILD_VULKAN=1 GG_BUILD_LOW_PERF=1 bash ./ci/run.sh ./tmp/results ./tmp/mnt
