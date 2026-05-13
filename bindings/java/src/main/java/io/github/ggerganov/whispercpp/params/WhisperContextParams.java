@@ -38,7 +38,7 @@ public class WhisperContextParams extends Structure {
     public WhisperAheads.ByValue dtw_aheads;
 
     /** DTW memory size (internal use) */
-    public NativeLong dtw_mem_size;
+    public CSizeT dtw_mem_size;
 
     /** Use GPU for inference */
     public void useGpu(boolean enable) {
