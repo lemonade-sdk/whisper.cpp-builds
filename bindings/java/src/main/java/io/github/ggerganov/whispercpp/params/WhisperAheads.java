@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class WhisperAheads extends Structure {
-    public NativeLong n_heads;
+    public CSizeT n_heads;
 
     public Pointer heads;
 
@@ -16,7 +16,7 @@ public class WhisperAheads extends Structure {
      * Create alignment heads from an array of WhisperAhead objects
      */
     public void setHeads(WhisperAhead[] aheadsArray) {
-        this.n_heads = new NativeLong(aheadsArray.length);
+        this.n_heads = new CSizeT(aheadsArray.length);
 
         int structSize = aheadsArray[0].size();
         Memory mem = new Memory(structSize * aheadsArray.length);
