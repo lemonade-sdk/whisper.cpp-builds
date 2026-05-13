@@ -475,18 +475,20 @@ jobs:
 
       - name: Package binaries
         run: |
-          PACKAGE_NAME="whisper-bin-linux-x64-cpu"
-          mkdir -p "$PACKAGE_NAME"
-          cp -r build/bin/* "$PACKAGE_NAME/" 2>/dev/null || true
-          find build -name "*.so*" -exec cp {} "$PACKAGE_NAME/" \; 2>/dev/null || true
-          zip -r "${PACKAGE_NAME}.zip" "$PACKAGE_NAME"
+          ARCHIVE="whisper-${{ needs.determine-tag.outputs.tag_name }}-linux-cpu-x86_64.tar.gz"
+          STAGE="whisper-${{ needs.determine-tag.outputs.tag_name }}-linux-cpu-x86_64"
+          mkdir -p "$STAGE"
+          cp -r build/bin/* "$STAGE/" 2>/dev/null || true
+          find build -name "*.so*" -exec cp {} "$STAGE/" \; 2>/dev/null || true
+          tar -czf "$ARCHIVE" "$STAGE"
+          echo "ARCHIVE=$ARCHIVE" >> "$GITHUB_ENV"
 
       - name: Upload binaries
         if: ${{ needs.determine-tag.outputs.should_release }}
         uses: actions/upload-artifact@v6
         with:
-          name: whisper-bin-linux-x64-cpu.zip
-          path: whisper-bin-linux-x64-cpu.zip
+          name: ${{ env.ARCHIVE }}
+          path: ${{ env.ARCHIVE }}
 
   linux-x64-vulkan:
     if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' ||
@@ -531,18 +533,20 @@ jobs:
 
       - name: Package binaries
         run: |
-          PACKAGE_NAME="whisper-bin-linux-x64-vulkan"
-          mkdir -p "$PACKAGE_NAME"
-          cp -r build/bin/* "$PACKAGE_NAME/" 2>/dev/null || true
-          find build -name "*.so*" -exec cp {} "$PACKAGE_NAME/" \; 2>/dev/null || true
-          zip -r "${PACKAGE_NAME}.zip" "$PACKAGE_NAME"
+          ARCHIVE="whisper-${{ needs.determine-tag.outputs.tag_name }}-linux-vulkan-x86_64.tar.gz"
+          STAGE="whisper-${{ needs.determine-tag.outputs.tag_name }}-linux-vulkan-x86_64"
+          mkdir -p "$STAGE"
+          cp -r build/bin/* "$STAGE/" 2>/dev/null || true
+          find build -name "*.so*" -exec cp {} "$STAGE/" \; 2>/dev/null || true
+          tar -czf "$ARCHIVE" "$STAGE"
+          echo "ARCHIVE=$ARCHIVE" >> "$GITHUB_ENV"
 
       - name: Upload binaries
         if: ${{ needs.determine-tag.outputs.should_release }}
         uses: actions/upload-artifact@v6
         with:
-          name: whisper-bin-linux-x64-vulkan.zip
-          path: whisper-bin-linux-x64-vulkan.zip
+          name: ${{ env.ARCHIVE }}
+          path: ${{ env.ARCHIVE }}
 
   darwin-arm64-metal:
     if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' ||
@@ -598,6 +602,92 @@ jobs:
           find build -name "*.dylib" -exec cp {} "$STAGE/" \; 2>/dev/null || true
           tar -czf "$ARCHIVE" "$STAGE"
           echo "ARCHIVE=$ARCHIVE" >> "$GITHUB_ENV"
+
+      - name: Upload binaries
+        if: ${{ needs.determine-tag.outputs.should_release }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ env.ARCHIVE }}
+          path: ${{ env.ARCHIVE }}
+
+  windows-npu-x64:
+    if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' ||
+            github.event.inputs.run_type == 'full-ci' }}
+    runs-on: [rai-170-sdk, Windows]
+    needs: determine-tag
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Install CMake if not available
+        shell: powershell
+        run: |
+          $cmakeInstalled = Get-Command cmake -ErrorAction SilentlyContinue
+          if (-not $cmakeInstalled) {
+              $cmakeVersion = "3.28.1"
+              $cmakeUrl = "https://github.com/Kitware/CMake/releases/download/v$cmakeVersion/cmake-$cmakeVersion-windows-x86_64.msi"
+              Invoke-WebRequest -Uri $cmakeUrl -OutFile cmake-installer.msi
+              Start-Process msiexec.exe -ArgumentList "/i cmake-installer.msi /quiet /norestart" -Wait
+              $cmakePath = "C:\Program Files\CMake\bin"
+              $env:PATH = "$cmakePath;$env:PATH"
+              echo $cmakePath >> $env:GITHUB_PATH
+              cmake --version
+              if ($LASTEXITCODE -ne 0) { exit 1 }
+          } else {
+              cmake --version
+          }
+
+      - name: Download FlexML Runtime
+        shell: powershell
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/lemonade-sdk/whisper.cpp/releases/download/deps/flexmlrt1.7.0-win.zip" -OutFile flexmlrt.zip
+          if (-Not (Test-Path "flexmlrt.zip")) { Write-Error "flexmlrt.zip was not downloaded"; exit 1 }
+          if ((Get-Item "flexmlrt.zip").Length -eq 0) { Write-Error "flexmlrt.zip is empty"; exit 1 }
+
+      - name: Extract FlexML Runtime
+        shell: powershell
+        run: |
+          tar xvf flexmlrt.zip
+          if ($LASTEXITCODE -ne 0) { Write-Error "Extraction failed"; exit 1 }
+          $extractedDirs = Get-ChildItem -Directory | Where-Object { $_.Name -like "flexmlrt*" }
+          if (-not $extractedDirs) { Write-Error "No flexmlrt directory found after extraction"; exit 1 }
+
+      - name: Setup FlexML Runtime, Configure and Build
+        shell: cmd
+        run: |
+          cd flexmlrt
+          call setup.bat
+          if errorlevel 1 ( echo ERROR: FlexML setup failed! & exit /b 1 )
+          cd ..
+          cmake -B build -A x64 -DCMAKE_BUILD_TYPE=Release -DWHISPER_VITISAI=ON
+          if errorlevel 1 ( echo ERROR: CMake configuration failed! & exit /b 1 )
+          cmake --build build --config Release -j
+          if errorlevel 1 ( echo ERROR: Build failed! & exit /b 1 )
+
+      - name: Copy FlexML Runtime DLLs to build output
+        shell: powershell
+        run: |
+          if (Test-Path "flexmlrt/bin") {
+            $binDlls = Get-ChildItem -Path "flexmlrt/bin/*.dll" -ErrorAction SilentlyContinue
+            if ($binDlls) { Copy-Item -Path "flexmlrt/bin/*.dll" -Destination "build/bin/Release/" -Force }
+          }
+          if (Test-Path "flexmlrt/lib") {
+            $libDlls = Get-ChildItem -Path "flexmlrt/lib/*.dll" -ErrorAction SilentlyContinue
+            if ($libDlls) { Copy-Item -Path "flexmlrt/lib/*.dll" -Destination "build/bin/Release/" -Force }
+          }
+
+      - name: Package binaries
+        shell: powershell
+        run: |
+          $archive = "whisper-${{ needs.determine-tag.outputs.tag_name }}-windows-npu-x64.zip"
+          # Flat zip: binaries at archive root (no nested zip, no top-level directory).
+          Compress-Archive -Path "build/bin/Release/*" -DestinationPath $archive -Force
+          if (-not (Test-Path $archive)) { Write-Error "Failed to create package"; exit 1 }
+          "ARCHIVE=$archive" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
       - name: Upload binaries
         if: ${{ needs.determine-tag.outputs.should_release }}
@@ -1476,6 +1566,7 @@ jobs:
       - linux-x64-cpu
       - linux-x64-vulkan
       - windows-vulkan
+      - windows-npu-x64
       - darwin-arm64-metal
 
     steps:
