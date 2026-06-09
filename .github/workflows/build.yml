@@ -146,7 +146,7 @@ jobs:
             apt install -y build-essential libsdl2-dev cmake git
             cmake -B build \
                 -DCMAKE_C_FLAGS="-march=x86-64-v3" \
-                -DCMAKE_CXX_FLAGS="-march=x86-64-v3" \
+                -DCMAKE_CXX_FLAGS="-march=x86-64-v3"
             cmake --build build --config Release -j $(nproc)'
 
   ubuntu-22-arm64:
