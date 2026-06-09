@@ -144,12 +144,16 @@ jobs:
 
             apt update
             apt install -y build-essential libsdl2-dev cmake git
-            cmake -B build \
-                -DCMAKE_C_FLAGS="-march=x86-64-v3" \
-                -DCMAKE_CXX_FLAGS="-march=x86-64-v3" \
-                -DGGML_NATIVE=OFF \
-                -DGGML_AVX512=OFF
-            cmake --build build --config Release -j $(nproc)'
+          if [ "${{ matrix.arch }}" = "linux/amd64" ]; then
+              cmake -B build \
+                  -DCMAKE_C_FLAGS="-march=x86-64-v3" \
+                  -DCMAKE_CXX_FLAGS="-march=x86-64-v3" \
+                  -DGGML_NATIVE=OFF \
+                  -DGGML_AVX512=OFF
+          else
+              cmake -B build
+          fi
+              cmake --build build --config Release -j $(nproc)'
 
   ubuntu-22-arm64:
     if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' ||
