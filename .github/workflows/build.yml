@@ -466,8 +466,7 @@ jobs:
               -DGGML_OPENMP=OFF \
               -DCMAKE_C_FLAGS="-march=x86-64-v3" \
               -DCMAKE_CXX_FLAGS="-march=x86-64-v3" \
-              -DGGML_NATIVE=OFF -DGGML_AVX512=OFF \
-              -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang 
+              -DGGML_NATIVE=OFF -DGGML_AVX512=OFF
             else
               cmake . -DCMAKE_BUILD_TYPE=Debug \
               -DWHISPER_SANITIZE_${{ matrix.sanitizer }}=ON \
