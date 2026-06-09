@@ -306,7 +306,14 @@ jobs:
 
             apt update
             apt install -y build-essential cmake libsdl2-dev git
-            cmake . -DWHISPER_SDL2=ON -DCMAKE_BUILD_TYPE=${{ matrix.build }}
+            if [ "${{ matrix.arch }}" = "linux/amd64" ]; then
+              cmake . -DCMAKE_C_FLAGS="-march=x86-64-v3" \
+              -DCMAKE_CXX_FLAGS="-march=x86-64-v3" \
+              -DGGML_NATIVE=OFF -DGGML_AVX512=OFF \
+              -DWHISPER_SDL2=ON -DCMAKE_BUILD_TYPE=${{ matrix.build }}
+            else
+              cmake . -DWHISPER_SDL2=ON -DCMAKE_BUILD_TYPE=${{ matrix.build }}
+            fi
             make
             ctest -L gh --output-on-failure'
 
@@ -490,21 +497,15 @@ jobs:
 
       - name: Configure CMake
         run: |
-          if [ "${{ matrix.arch }}" = "linux/amd64" ]; then
-            cmake -B build \
-              -DCMAKE_C_FLAGS="-march=x86-64-v3" \
-              -DCMAKE_CXX_FLAGS="-march=x86-64-v3" \
-              -DCMAKE_BUILD_TYPE=${{ matrix.build }} \
-              -DWHISPER_BUILD_EXAMPLES=ON \
-              -DWHISPER_BUILD_TESTS=OFF \
-              -DWHISPER_BUILD_SERVER=ON
-          else
-            cmake -B build \
-              -DCMAKE_BUILD_TYPE=${{ matrix.build }} \
-              -DWHISPER_BUILD_EXAMPLES=ON \
-              -DWHISPER_BUILD_TESTS=OFF \
-              -DWHISPER_BUILD_SERVER=ON            
-          fi
+          cmake -B build \
+            -DCMAKE_C_FLAGS="-march=x86-64-v3" \
+            -DCMAKE_CXX_FLAGS="-march=x86-64-v3" \
+            -DGGML_NATIVE=OFF \
+            -DGGML_AVX512=OFF \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build }} \
+            -DWHISPER_BUILD_EXAMPLES=ON \
+            -DWHISPER_BUILD_TESTS=OFF \
+            -DWHISPER_BUILD_SERVER=ON
 
 
       - name: Build
@@ -550,22 +551,16 @@ jobs:
 
       - name: Configure CMake (Vulkan)
         run: |
-          if [ "${{ matrix.arch }}" = "linux/amd64" ]; then
-            cmake -B build \
-              -DCMAKE_C_FLAGS="-march=x86-64-v3" \
-              -DCMAKE_CXX_FLAGS="-march=x86-64-v3" \
-              -DCMAKE_BUILD_TYPE=${{ matrix.build }} \
-              -DWHISPER_BUILD_EXAMPLES=ON \
-              -DWHISPER_BUILD_TESTS=OFF \
-              -DWHISPER_BUILD_SERVER=ON
-          else
-            cmake -B build \
-              -DCMAKE_BUILD_TYPE=${{ matrix.build }} \
-              -DGGML_VULKAN=ON \
-              -DWHISPER_BUILD_EXAMPLES=ON \
-              -DWHISPER_BUILD_TESTS=OFF \
-              -DWHISPER_BUILD_SERVER=ON       
-          fi
+          cmake -B build \
+            -DCMAKE_C_FLAGS="-march=x86-64-v3" \
+            -DCMAKE_CXX_FLAGS="-march=x86-64-v3" \
+            -DGGML_NATIVE=OFF \
+            -DGGML_AVX512=OFF \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build }} \
+            -DGGML_VULKAN=ON \
+            -DWHISPER_BUILD_EXAMPLES=ON \
+            -DWHISPER_BUILD_TESTS=OFF \
+            -DWHISPER_BUILD_SERVER=ON
 
       - name: Build
         run: cmake --build build --config ${{ matrix.build }} -j$(nproc)
